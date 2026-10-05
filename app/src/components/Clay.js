@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F } from '../theme';
 import Icon from './Icon';
 
-const LINE = 'rgba(88,112,58,0.12)';
-const BEVEL = { borderColor: LINE };
+const BEVEL = {
+  borderTopColor: 'rgba(255,255,255,0.95)', borderLeftColor: 'rgba(255,255,255,0.85)',
+  borderBottomColor: 'rgba(88,112,58,0.16)', borderRightColor: 'rgba(88,112,58,0.12)',
+};
 
 export const T = ({ s = 15, c = C.ink, f = 'semi', style, children, ...p }) =>
   <Text {...p} style={[{ fontSize: s, color: c, fontFamily: F[f] }, style]}>{children}</Text>;
@@ -15,21 +17,28 @@ export const T = ({ s = 15, c = C.ink, f = 'semi', style, children, ...p }) =>
 // Raised clay surface: diagonal gradient + lit top-left bevel + soft drop shadow.
 export function Clay({ children, style, inner, radius = 26, colors = C.card, depth = 1 }) {
   const shadow = {
-    shadowColor: C.shadow, shadowOpacity: 0.12 * Math.min(depth, 1.2), shadowRadius: 10 * depth,
-    shadowOffset: { width: 0, height: 4 * depth }, elevation: Math.round(2 * depth),
+    shadowColor: C.shadow, shadowOpacity: 0.26 * Math.min(depth, 1.2), shadowRadius: 14 * depth,
+    shadowOffset: { width: 6 * depth, height: 9 * depth }, elevation: Math.round(7 * depth),
   };
   return (
     <View style={[{ borderRadius: radius, backgroundColor: colors[1] }, shadow, style]}>
-      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-        style={[{ borderRadius: radius, borderWidth: 1, ...BEVEL, padding: 16 }, inner]}>
+      <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[{ borderRadius: radius, borderWidth: 2, ...BEVEL, padding: 16 }, inner]}>
         {children}
       </LinearGradient>
     </View>
   );
 }
 
+// Pressed-in surface (inputs, tracks, segmented control).
 export function Well({ children, style, radius = 18 }) {
-  return <View style={[{ backgroundColor: C.well, borderRadius: radius, borderWidth: 1, borderColor: LINE }, style]}>{children}</View>;
+  return (
+    <View style={[{
+      backgroundColor: C.well, borderRadius: radius, borderWidth: 2,
+      borderTopColor: 'rgba(88,112,58,0.18)', borderLeftColor: 'rgba(88,112,58,0.12)',
+      borderBottomColor: 'rgba(255,255,255,0.9)', borderRightColor: 'rgba(255,255,255,0.8)',
+    }, style]}>{children}</View>
+  );
 }
 
 export function Press({ onPress, disabled, children, style, scale = 0.97 }) {
@@ -45,29 +54,33 @@ export function Press({ onPress, disabled, children, style, scale = 0.97 }) {
 
 export function Button({ label, onPress, kind = 'matcha', icon, disabled, loading, style }) {
   const matcha = kind === 'matcha', danger = kind === 'danger';
-  const bg = matcha ? C.matchaFlat : danger ? '#F6E3DC' : C.mist;
+  const colors = matcha ? C.matcha : danger ? ['#F8E7DF', '#EDCFC3'] : C.card;
   const color = matcha ? '#fff' : danger ? C.bad : C.matchaInk;
   return (
     <Press onPress={onPress} disabled={disabled || loading} style={[{ opacity: disabled ? 0.45 : 1 }, style]}>
-      <View style={{ minHeight: 48, borderRadius: 16, backgroundColor: bg, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        {loading ? <ActivityIndicator color={color} /> : icon ? <Icon name={icon} size={19} color={color} /> : null}
-        <T s={15} f="bold" c={color}>{label}</T>
-      </View>
+      <Clay colors={colors} radius={22} depth={matcha ? 0.9 : 0.6}
+        inner={{ paddingVertical: 13, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {loading ? <ActivityIndicator color={color} /> : icon ? <Icon name={icon} size={20} color={color} /> : null}
+        <T s={15.5} f="bold" c={color}>{label}</T>
+      </Clay>
     </Press>
   );
 }
 
 export function Segmented({ options, value, onChange }) {
   return (
-    <Well radius={16} style={{ flexDirection: 'row', padding: 4, gap: 4 }}>
+    <Well radius={22} style={{ flexDirection: 'row', padding: 3 }}>
       {options.map(o => {
         const on = o.key === value;
         return (
           <Press key={o.key} onPress={() => onChange(o.key)} style={{ flex: 1 }} scale={0.98}>
-            <View style={[{ height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-              on && { backgroundColor: '#fff', shadowColor: C.shadow, shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 }]}>
-              <T s={13.5} f={on ? 'black' : 'semi'} c={on ? C.matchaInk : C.mute} numberOfLines={1}>{o.label}</T>
-            </View>
+            {on ? (
+              <Clay radius={18} depth={0.5} inner={{ paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' }}>
+                <T s={13.5} f="bold" c={C.matchaInk}>{o.label}</T>
+              </Clay>
+            ) : (
+              <View style={{ paddingVertical: 12, alignItems: 'center' }}><T s={13.5} f="semi" c={C.mute}>{o.label}</T></View>
+            )}
           </Press>
         );
       })}
@@ -78,22 +91,23 @@ export function Segmented({ options, value, onChange }) {
 export function Chip({ label, on, onPress }) {
   return (
     <Press onPress={onPress} scale={0.95}>
-      <View style={{ height: 34, paddingHorizontal: 14, borderRadius: 17, justifyContent: 'center', backgroundColor: on ? C.matchaFlat : 'transparent', borderWidth: 1, borderColor: on ? C.matchaFlat : 'rgba(88,112,58,0.28)' }}>
+      <Clay radius={16} depth={on ? 0.5 : 0.3} colors={on ? C.matcha : C.card} inner={{ paddingVertical: 6, paddingHorizontal: 14 }}>
         <T s={13} f="bold" c={on ? '#fff' : C.mute}>{label}</T>
-      </View>
+      </Clay>
     </Press>
   );
 }
 
 export function Toggle({ value, onChange, disabled }) {
   const x = useRef(new Animated.Value(value ? 1 : 0)).current;
-  useEffect(() => { Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(); }, [value]);
+  useEffect(() => { Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, speed: 20, bounciness: 8 }).start(); }, [value]);
   return (
     <Pressable onPress={() => { if (disabled) return; tick(); onChange(!value); }} style={{ opacity: disabled ? 0.5 : 1 }}>
-      <View style={{ width: 52, height: 30, borderRadius: 15, justifyContent: 'center', backgroundColor: value ? C.matchaFlat : C.well, borderWidth: 1, borderColor: value ? C.matchaFlat : 'rgba(88,112,58,0.28)' }}>
-        <Animated.View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', shadowColor: C.shadow, shadowOpacity: 0.3, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2,
-          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [3, 25] }) }] }} />
-      </View>
+      <Well radius={18} style={{ width: 58, height: 34, justifyContent: 'center', backgroundColor: value ? C.mist : C.well }}>
+        <Animated.View style={{ transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [1, 23] }) }] }}>
+          <Clay radius={14} depth={0.4} colors={value ? C.matcha : C.card} inner={{ width: 28, height: 28, padding: 0, borderWidth: 1.5 }} />
+        </Animated.View>
+      </Well>
     </Pressable>
   );
 }
@@ -102,9 +116,9 @@ export function Stepper({ label, hint, value, unit = '', onChange, min, max, ste
   const set = v => onChange(Math.min(max, Math.max(min, +(v).toFixed(1))));
   const Btn = ({ icon, d }) => (
     <Press onPress={() => set(value + d)} disabled={disabled || (d < 0 ? value <= min : value >= max)} style={{ opacity: disabled || (d < 0 ? value <= min : value >= max) ? 0.35 : 1 }}>
-      <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.mist, alignItems: 'center', justifyContent: 'center' }}>
+      <Clay radius={15} depth={0.4} inner={{ width: 34, height: 34, padding: 0, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 }}>
         <Icon name={icon} size={18} color={C.matchaInk} sw={2.2} />
-      </View>
+      </Clay>
     </Press>
   );
   return (
@@ -153,7 +167,7 @@ export function Screen({ children, onRefresh, refreshing }) {
   const ins = useSafeAreaInsets();
   return (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: ins.top + 14, paddingHorizontal: 18, paddingBottom: 112 }}
+      contentContainerStyle={{ paddingTop: ins.top + 14, paddingHorizontal: 18, paddingBottom: 130 }}
       refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.matchaDeep} colors={[C.matchaDeep]} /> : undefined}>
       {children}
     </ScrollView>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Clay, T, Segmented, Screen, Header, Gap, Label } from '../components/Clay';
-import { LineChart, BarChart, RangeChart, MiniBars, Spark } from '../components/Charts';
+import { LineChart, BarChart, RangeChart } from '../components/Charts';
 import Icon from '../components/Icon';
 import { useApi } from '../hooks';
 import { fmt, clock, dayLabel } from '../util';
@@ -43,14 +43,13 @@ function Series({ id, title, icon, color, unit, dec, points, range }) {
   );
 }
 
-function Stat({ icon, label, value, sub, children }) {
+function Stat({ icon, label, value, sub }) {
   return (
     <Clay style={{ flex: 1 }} radius={22} inner={{ padding: 14, gap: 2 }}>
       <Icon name={icon} size={18} color={C.matchaFlat} />
       <T s={24} f="black" c={C.ink} style={{ marginTop: 6, letterSpacing: -0.5 }}>{value}</T>
       <T s={12.5} f="bold" c={C.mute}>{label}</T>
       {sub ? <T s={11.5} c={C.faint} f="reg">{sub}</T> : null}
-      {children}
     </Clay>
   );
 }
@@ -77,12 +76,12 @@ export default function Stats({ active }) {
 
       <Label style={{ marginTop: 6 }}>Last {days} days</Label>
       <View style={{ flexDirection: 'row', gap: 14, marginBottom: 14 }}>
-        <Stat icon="drop" label="Waterings" value={tot ? tot.waterings : '–'} sub={tot?.skipped ? `${tot.skipped} skipped` : null}><MiniBars values={d.map(x => x.waterings)} color={C.soil} /></Stat>
-        <Stat icon="gauge" label="Water used" value={tot ? `${tot.liters} L` : '–'} sub="estimated"><MiniBars values={d.map(x => x.liters)} color={C.hum} /></Stat>
+        <Stat icon="drop" label="Waterings" value={tot ? tot.waterings : '–'} sub={tot?.skipped ? `${tot.skipped} skipped` : null} />
+        <Stat icon="gauge" label="Water used" value={tot ? `${tot.liters} L` : '–'} sub="estimated" />
       </View>
       <View style={{ flexDirection: 'row', gap: 14, marginBottom: 16 }}>
-        <Stat icon="thermo" label="Avg temperature" value={tot ? fmt(tot.avg_temp, '°', 1) : '–'} sub={tot?.max_temp != null ? `peak ${tot.max_temp}°` : null}><View style={{ marginTop: 8 }}><Spark values={d.map(x => x.avg_temp)} color={C.temp} height={38} /></View></Stat>
-        <Stat icon="shade" label="Cover moves" value={tot ? tot.shade_moves : '–'} sub="open + close"><MiniBars values={d.map(x => x.shade_moves)} color={C.matchaFlat} /></Stat>
+        <Stat icon="thermo" label="Avg temperature" value={tot ? fmt(tot.avg_temp, '°', 1) : '–'} sub={tot?.max_temp != null ? `peak ${tot.max_temp}°` : null} />
+        <Stat icon="shade" label="Cover moves" value={tot ? tot.shade_moves : '–'} />
       </View>
 
       <Clay radius={26} style={{ marginBottom: 16 }} inner={{ padding: 16 }}>
