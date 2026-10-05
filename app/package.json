@@ -30,6 +30,7 @@
     "@expo/metro-runtime": "~6.1.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.0"
+    "@babel/core": "^7.25.0",
+    "babel-preset-expo": "~54.0.0"
   }
 }
