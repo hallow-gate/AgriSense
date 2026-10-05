@@ -2,7 +2,7 @@
 # /api/* is proxied to your server, so the browser only talks to one origin (no CORS needed).
 services:
   - type: web
-    name: agrisense-web
+    name: agrisense-1.0
     runtime: static
     rootDir: app
     buildCommand: npm install && npx expo export -p web
