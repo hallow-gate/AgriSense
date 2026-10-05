@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "AgriSense",
+    "slug": "agrisense",
+    "scheme": "agrisense",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": { "image": "./assets/splash-icon.png", "resizeMode": "contain", "backgroundColor": "#EDF1E1" },
+    "android": {
+      "package": "com.agrisense.app",
+      "versionCode": 1,
+      "allowBackup": false,
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#A9C382" },
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT"],
+      "blockedPermissions": ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.SYSTEM_ALERT_WINDOW"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.agrisense.app",
+      "supportsTablet": false,
+      "infoPlist": { "NSFaceIDUsageDescription": "Unlock AgriSense with Face ID." }
+    },
+    "web": { "favicon": "./assets/favicon.png" },
+    "plugins": ["expo-secure-store", "expo-font", "expo-local-authentication"],
+    "extra": { "apiUrl": "https://your-agrisense-server.onrender.com" }
+  }
+}
