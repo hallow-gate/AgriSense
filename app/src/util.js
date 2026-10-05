@@ -62,7 +62,9 @@ const ACT = {
   login_ok: ['shield', 'ok', 'Signed in'], login_failed: ['lock', 'bad', 'Failed sign-in'], login_locked: ['lock', 'bad', 'Locked out'],
   logout: ['logout', 'mute', 'Signed out'], device_auth_failed: ['chip', 'bad', 'Device request rejected'],
 };
+const DEV_WHY = { missing: 'No signature headers (old firmware?)', id: 'Wrong DEVICE_ID', clock: 'Device clock off by more than 5 min, or not set', format: 'Malformed signature', sig: 'Signature mismatch: DEVICE_SECRET differs from the server', replay: 'Repeated request (replay)' };
 export function auditMeta(l) {
+  if (l.action === 'device_auth_failed') return { icon: 'chip', tone: 'bad', title: 'Device request rejected', sub: DEV_WHY[l.meta?.why] || l.meta?.why };
   if (l.action === 'command_created') {
     const a = l.meta?.action;
     return { icon: a === 'water' ? 'drop' : 'shade', tone: 'ok', title: `Sent: ${a === 'water' ? 'water now' : a}` };

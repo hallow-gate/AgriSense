@@ -175,3 +175,21 @@ export function RangeChart({ data, height = 160, color = C.temp }) {
     </View>
   );
 }
+
+// ---------- tiny per-day bars for stat tiles ----------
+export function MiniBars({ values, color = C.matchaFlat, height = 38 }) {
+  const [w, onLayout] = useWidth();
+  const n = values.length, max = Math.max(0.0001, ...values.map(v => v || 0)), slot = w / Math.max(1, n), bw = Math.max(2, slot * 0.6);
+  return (
+    <View onLayout={onLayout} style={{ height, marginTop: 8 }}>
+      {w > 0 && n > 0 && (
+        <Svg width={w} height={height}>
+          {values.map((v, i) => {
+            const bh = Math.max(2, (height - 2) * ((v || 0) / max));
+            return <Rect key={i} x={slot * i + (slot - bw) / 2} y={height - bh} width={bw} height={bh} rx={Math.min(3, bw / 2)} fill={v ? color : C.well} />;
+          })}
+        </Svg>
+      )}
+    </View>
+  );
+}
