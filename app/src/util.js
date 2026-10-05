@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Alert, Platform } from 'react-native';
 
 export const fmt = (v, u = '', d = 0) => (v == null || Number.isNaN(v) ? '–' : `${Number(v).toFixed(d)}${u}`);
 
@@ -77,4 +78,10 @@ export function deviceName(ua = '') {
   if (/okhttp|Expo|AgriSense/i.test(ua)) return 'Phone app';
   if (/CFNetwork|Darwin/i.test(ua)) return 'iPhone app';
   return ua ? ua.slice(0, 28) : '';
+}
+
+// Alert.alert is a no-op on the web, so use the browser's confirm box there.
+export function confirmAsk(title, msg, okLabel, onOk) {
+  if (Platform.OS === 'web') { if (window.confirm(`${title}\n\n${msg}`)) onOk(); return; }
+  Alert.alert(title, msg, [{ text: 'Cancel', style: 'cancel' }, { text: okLabel, onPress: onOk }]);
 }

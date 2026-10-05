@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert } from 'react-native';
+import { View } from 'react-native';
 import { Clay, T, Button, Toggle, Stepper, Pill, Screen, Header, Gap, Label, Divider } from '../components/Clay';
 import { useApi } from '../hooks';
 import { api } from '../api';
-import { uuid, hourLabel } from '../util';
+import { uuid, hourLabel, confirmAsk } from '../util';
 import { C } from '../theme';
 
 // stepping onto the other slot's hour jumps one further so the two times never match
@@ -33,7 +33,7 @@ export default function Control({ active, user }) {
     } catch (e) { setMsg(e.status === 403 ? 'This account is view-only.' : e.message); }
     setBusy(null);
   };
-  const water = () => Alert.alert('Water now?', `The pump will run for ${s?.settings?.pump_seconds ?? 30} seconds.`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Water', onPress: () => send('water') }]);
+  const water = () => confirmAsk('Water now?', `The pump will run for ${s?.settings?.pump_seconds ?? 30} seconds.`, 'Water', () => send('water'));
 
   const save = async () => {
     setBusy('save'); setErr('');

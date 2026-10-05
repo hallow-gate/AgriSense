@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
+import { holdSplash, hideSplash } from './src/splash';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Nunito_500Medium, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 
@@ -18,7 +18,7 @@ import Logs from './src/screens/Logs';
 import Control from './src/screens/Control';
 import Device from './src/screens/Device';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+holdSplash();
 
 const TABS = [
   { key: 'home', label: 'Home', icon: 'home', Screen: Home },
@@ -89,13 +89,17 @@ export default function App() {
     })();
   }, []);
 
-  useEffect(() => { if (fontsReady && booted) SplashScreen.hideAsync().catch(() => {}); }, [fontsReady, booted]);
+  useEffect(() => { if (fontsReady && booted) hideSplash(); }, [fontsReady, booted]);
   if (!fontsReady || !booted) return null;
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
-      {user ? <Shell user={user} onSignOut={async () => { await logout(); setUser(null); }} /> : <Login onDone={setUser} />}
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+          {user ? <Shell user={user} onSignOut={async () => { await logout(); setUser(null); }} /> : <Login onDone={setUser} />}
+        </View>
+      </View>
     </SafeAreaProvider>
   );
 }

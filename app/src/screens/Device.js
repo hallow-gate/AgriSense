@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Clay, T, Pill, Toggle, Button, Screen, Header, Gap, Label, Divider } from '../components/Clay';
 import Icon from '../components/Icon';
 import { useApi } from '../hooks';
@@ -73,13 +73,13 @@ export default function Device({ active, user, onSignOut }) {
           </View>
         </View>
         <Divider />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
+        {Platform.OS !== 'web' && <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
           <View style={{ flex: 1, paddingRight: 10 }}>
             <T s={15} f="bold">Lock with biometrics</T>
             <T s={12.5} c={C.mute} f="reg">{bio ? 'Ask for fingerprint or face when you come back to the app.' : 'Set up a fingerprint or face unlock on this phone first.'}</T>
           </View>
           <Toggle value={lock} disabled={!bio} onChange={async v => { if (await setLockEnabled(v)) setLock(v); }} />
-        </View>
+        </View>}
         <Gap h={10} />
         <Button kind="danger" icon="logout" label="Sign out" onPress={onSignOut} />
       </Clay>

@@ -1,7 +1,9 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import * as store from './store';
 
-export const BASE = (process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || '').replace(/\/$/, '');
+// Web: same origin (the Render static site proxies /api/* to the server, so no CORS is needed).
+export const BASE = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || '').replace(/\/$/, '');
 const KEY = 'agrisense.session';
 
 export class ApiError extends Error {
@@ -16,13 +18,13 @@ export const setOnAuthLost = fn => { onLost = fn; };
 export const getSession = () => session;
 
 export async function loadSession() {
-  try { const raw = await SecureStore.getItemAsync(KEY); session = raw ? JSON.parse(raw) : null; } catch { session = null; }
+  try { const raw = await store.getItem(KEY); session = raw ? JSON.parse(raw) : null; } catch { session = null; }
   return session;
 }
 async function saveSession(s) {
   session = s;
-  if (s) await SecureStore.setItemAsync(KEY, JSON.stringify(s), { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
-  else await SecureStore.deleteItemAsync(KEY);
+  if (s) await store.setItem(KEY, JSON.stringify(s));
+  else await store.deleteItem(KEY);
 }
 
 async function raw(path, { method = 'GET', body, token } = {}) {

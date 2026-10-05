@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, Animated, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { tick } from '../haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { C, F } from '../theme';
 import Icon from './Icon';
@@ -46,7 +46,7 @@ export function Press({ onPress, disabled, children, style, scale = 0.97 }) {
   const to = x => Animated.spring(v, { toValue: x, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
   return (
     <Pressable disabled={disabled} onPressIn={() => to(scale)} onPressOut={() => to(1)}
-      onPress={() => { try { Haptics.selectionAsync(); } catch {} onPress && onPress(); }}>
+      onPress={() => { tick(); onPress && onPress(); }}>
       <Animated.View style={[{ transform: [{ scale: v }] }, style]}>{children}</Animated.View>
     </Pressable>
   );
@@ -102,7 +102,7 @@ export function Toggle({ value, onChange, disabled }) {
   const x = useRef(new Animated.Value(value ? 1 : 0)).current;
   useEffect(() => { Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, speed: 20, bounciness: 8 }).start(); }, [value]);
   return (
-    <Pressable onPress={() => { if (disabled) return; try { Haptics.selectionAsync(); } catch {} onChange(!value); }} style={{ opacity: disabled ? 0.5 : 1 }}>
+    <Pressable onPress={() => { if (disabled) return; tick(); onChange(!value); }} style={{ opacity: disabled ? 0.5 : 1 }}>
       <Well radius={18} style={{ width: 58, height: 34, justifyContent: 'center', backgroundColor: value ? C.mist : C.well }}>
         <Animated.View style={{ transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [1, 23] }) }] }}>
           <Clay radius={14} depth={0.4} colors={value ? C.matcha : C.card} inner={{ width: 28, height: 28, padding: 0, borderWidth: 1.5 }} />

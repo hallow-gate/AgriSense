@@ -1,8 +1,8 @@
-import * as SecureStore from 'expo-secure-store';
+import * as store from './store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 const KEY = 'agrisense.applock';
-export const lockEnabled = async () => (await SecureStore.getItemAsync(KEY).catch(() => null)) === '1';
+export const lockEnabled = async () => (await store.getItem(KEY).catch(() => null)) === '1';
 export const biometricsAvailable = async () => {
   try { return (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync()); } catch { return false; }
 };
@@ -11,6 +11,6 @@ export const unlock = async () => {
 };
 export async function setLockEnabled(on) {
   if (on && !(await unlock())) return false;          // prove it works before turning it on
-  if (on) await SecureStore.setItemAsync(KEY, '1'); else await SecureStore.deleteItemAsync(KEY);
+  if (on) await store.setItem(KEY, '1'); else await store.deleteItem(KEY);
   return true;
 }
