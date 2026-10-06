@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, Animated, ActivityIndicator, ScrollView, RefreshControl, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tick } from '../haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,13 +41,15 @@ export function Well({ children, style, radius = 18 }) {
   );
 }
 
-export function Press({ onPress, disabled, children, style, scale = 0.97 }) {
+export function Press({ onPress, disabled, children, style, scale = 0.97, hitSlop }) {
   const v = useRef(new Animated.Value(1)).current;
   const to = x => Animated.spring(v, { toValue: x, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  // `style` (flex, width, alignSelf, opacity) belongs on the Pressable, which is the real child of the parent row.
   return (
-    <Pressable disabled={disabled} onPressIn={() => to(scale)} onPressOut={() => to(1)}
-      onPress={() => { tick(); onPress && onPress(); }}>
-      <Animated.View style={[{ transform: [{ scale: v }] }, style]}>{children}</Animated.View>
+    <Pressable disabled={disabled} hitSlop={hitSlop} onPressIn={() => to(scale)} onPressOut={() => to(1)}
+      onPress={() => { tick(); onPress && onPress(); }}
+      style={[{ cursor: disabled ? 'default' : 'pointer' }, style]}>
+      <Animated.View style={{ transform: [{ scale: v }], flexGrow: 1 }}>{children}</Animated.View>
     </Pressable>
   );
 }
@@ -68,22 +70,28 @@ export function Button({ label, onPress, kind = 'matcha', icon, disabled, loadin
 }
 
 export function Segmented({ options, value, onChange }) {
+  const [w, setW] = useState(0);
+  const n = options.length, idx = Math.max(0, options.findIndex(o => o.key === value));
+  const x = useRef(new Animated.Value(idx)).current;
+  useEffect(() => { Animated.spring(x, { toValue: idx, useNativeDriver: true, speed: 18, bounciness: 5 }).start(); }, [idx]);
+  const pad = 4, seg = w ? (w - pad * 2) / n : 0;
   return (
-    <Well radius={22} style={{ flexDirection: 'row', padding: 3 }}>
-      {options.map(o => {
-        const on = o.key === value;
-        return (
-          <Press key={o.key} onPress={() => onChange(o.key)} style={{ flex: 1 }} scale={0.98}>
-            {on ? (
-              <Clay radius={18} depth={0.5} inner={{ paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center' }}>
-                <T s={13.5} f="bold" c={C.matchaInk}>{o.label}</T>
-              </Clay>
-            ) : (
-              <View style={{ paddingVertical: 12, alignItems: 'center' }}><T s={13.5} f="semi" c={C.mute}>{o.label}</T></View>
-            )}
-          </Press>
-        );
-      })}
+    <Well radius={22} style={{ padding: pad }}>
+      <View style={{ flexDirection: 'row' }} onLayout={e => setW(e.nativeEvent.layout.width + pad * 2)}>
+        {seg > 0 && (
+          <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: seg, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, seg * (n - 1)] }) }] }}>
+            <Clay radius={17} depth={0.45} style={{ flex: 1 }} inner={{ flex: 1, padding: 0 }} />
+          </Animated.View>
+        )}
+        {options.map(o => {
+          const on = o.key === value;
+          return (
+            <Pressable key={o.key} onPress={() => { tick(); onChange(o.key); }} style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <T s={13.5} f={on ? 'bold' : 'semi'} c={on ? C.matchaInk : C.mute} numberOfLines={1}>{o.label}</T>
+            </Pressable>
+          );
+        })}
+      </View>
     </Well>
   );
 }
@@ -100,14 +108,16 @@ export function Chip({ label, on, onPress }) {
 
 export function Toggle({ value, onChange, disabled }) {
   const x = useRef(new Animated.Value(value ? 1 : 0)).current;
-  useEffect(() => { Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, speed: 20, bounciness: 8 }).start(); }, [value]);
+  useEffect(() => { Animated.spring(x, { toValue: value ? 1 : 0, useNativeDriver: true, speed: 20, bounciness: 6 }).start(); }, [value]);
   return (
-    <Pressable onPress={() => { if (disabled) return; tick(); onChange(!value); }} style={{ opacity: disabled ? 0.5 : 1 }}>
-      <Well radius={18} style={{ width: 58, height: 34, justifyContent: 'center', backgroundColor: value ? C.mist : C.well }}>
-        <Animated.View style={{ transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [1, 23] }) }] }}>
-          <Clay radius={14} depth={0.4} colors={value ? C.matcha : C.card} inner={{ width: 28, height: 28, padding: 0, borderWidth: 1.5 }} />
+    <Pressable accessibilityRole="switch" accessibilityState={{ checked: !!value, disabled: !!disabled }}
+      onPress={() => { if (disabled) return; tick(); onChange(!value); }}
+      style={{ width: 58, height: 34, flexShrink: 0, opacity: disabled ? 0.5 : 1, cursor: disabled ? 'default' : 'pointer' }}>
+      <View style={{ width: 58, height: 34, borderRadius: 17, backgroundColor: value ? C.mist : C.well, borderWidth: 2, borderTopColor: 'rgba(88,112,58,0.18)', borderLeftColor: 'rgba(88,112,58,0.12)', borderBottomColor: 'rgba(255,255,255,0.9)', borderRightColor: 'rgba(255,255,255,0.8)' }}>
+        <Animated.View style={{ position: 'absolute', top: 1, left: 1, width: 26, height: 26, transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [0, 24] }) }] }}>
+          <Clay radius={13} depth={0.35} colors={value ? C.matcha : C.card} style={{ width: 26, height: 26 }} inner={{ width: 26, height: 26, padding: 0, borderWidth: 1.5 }} />
         </Animated.View>
-      </Well>
+      </View>
     </Pressable>
   );
 }
@@ -122,14 +132,14 @@ export function Stepper({ label, hint, value, unit = '', onChange, min, max, ste
     </Press>
   );
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}>
-      <View style={{ flex: 1, paddingRight: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 8 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
         <T s={15} f="bold">{label}</T>
         {hint ? <T s={12.5} c={C.mute} f="reg">{hint}</T> : null}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <Btn icon="minus" d={-step} />
-        <T s={15.5} f="black" c={C.matchaInk} style={{ minWidth: 66, textAlign: 'center' }}>{format ? format(value) : `${value}${unit}`}</T>
+        <T s={15.5} f="black" c={C.matchaInk} style={{ minWidth: 64, textAlign: 'center' }}>{format ? format(value) : `${value}${unit}`}</T>
         <Btn icon="plus" d={step} />
       </View>
     </View>
@@ -163,11 +173,13 @@ export function Header({ title, sub, right }) {
 export const Label = ({ children, style }) =>
   <T s={12.5} f="bold" c={C.mute} style={[{ letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }, style]}>{children}</T>;
 
-export function Screen({ children, onRefresh, refreshing }) {
+export function Screen({ children, onRefresh, refreshing, maxWidth = 760 }) {
   const ins = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const pad = width >= 768 ? 28 : 18;
   return (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: ins.top + 14, paddingHorizontal: 18, paddingBottom: 130 }}
+      contentContainerStyle={{ paddingTop: ins.top + 14, paddingHorizontal: pad, paddingBottom: (width >= 900 ? 40 : 130 + ins.bottom), width: '100%', maxWidth, alignSelf: 'center' }}
       refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.matchaDeep} colors={[C.matchaDeep]} /> : undefined}>
       {children}
     </ScrollView>

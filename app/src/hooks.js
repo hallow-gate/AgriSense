@@ -5,11 +5,18 @@ import { usePolling } from './util';
 // Fetch a path; optionally poll while `active`.
 export function useApi(path, { ms, active = true } = {}) {
   const [s, set] = useState({ data: null, error: null, loading: true });
-  const alive = useRef(true);
+  const alive = useRef(true), seq = useRef(0), prev = useRef(path);
   useEffect(() => () => { alive.current = false; }, []);
   const load = useCallback(async () => {
-    try { const d = await api(path); alive.current && set({ data: d, error: null, loading: false }); }
-    catch (e) { alive.current && set(p => ({ ...p, error: e, loading: false })); }
+    const my = ++seq.current;
+    try { const d = await api(path); alive.current && my === seq.current && set({ data: d, error: null, loading: false }); }
+    catch (e) { alive.current && my === seq.current && set(p => ({ ...p, error: e, loading: false })); }
+  }, [path]);
+  // a new path means different data: drop the old and fetch straight away
+  useEffect(() => {
+    if (prev.current === path) return;
+    prev.current = path; set({ data: null, error: null, loading: true });
+    if (active) load();
   }, [path]);
   usePolling(load, ms || 60000, active && !!ms);
   useEffect(() => { if (!ms && active) load(); }, [active, load, ms]);

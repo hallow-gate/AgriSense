@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, AppState } from 'react-native';
+import { View, StyleSheet, AppState, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { holdSplash, hideSplash } from './src/splash';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -60,14 +60,19 @@ function Shell({ user, onSignOut }) {
   }, []);
 
   const go = k => { setTab(k); setSeen(s => (s[k] ? s : { ...s, [k]: true })); };
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
-      {TABS.map(({ key, Screen }) => seen[key] && (
-        <View key={key} style={[StyleSheet.absoluteFill, tab !== key && { display: 'none' }]}>
-          <Screen active={tab === key && !locked} user={user} go={go} onSignOut={onSignOut} />
-        </View>
-      ))}
-      <TabBar tabs={TABS} active={tab} onChange={go} />
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: C.bg }}>
+      {wide ? <TabBar variant="rail" tabs={TABS} active={tab} onChange={go} /> : null}
+      <View style={{ flex: 1 }}>
+        {TABS.map(({ key, Screen }) => seen[key] && (
+          <View key={key} style={[StyleSheet.absoluteFill, tab !== key && { display: 'none' }]}>
+            <Screen active={tab === key && !locked} user={user} go={go} onSignOut={onSignOut} wide={wide} />
+          </View>
+        ))}
+        {wide ? null : <TabBar tabs={TABS} active={tab} onChange={go} />}
+      </View>
       {locked ? <LockScreen onUnlock={() => setLocked(false)} /> : null}
     </View>
   );
@@ -96,7 +101,7 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <View style={{ flex: 1, backgroundColor: C.bg }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+        <View style={{ flex: 1, width: '100%' }}>
           {user ? <Shell user={user} onSignOut={async () => { await logout(); setUser(null); }} /> : <Login onDone={setUser} />}
         </View>
       </View>
