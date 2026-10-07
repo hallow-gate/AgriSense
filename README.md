@@ -53,7 +53,7 @@ Plant watering and shade system. Three separate parts that only talk over HTTPS:
 
 ### 2. Server (Render)
 1. New Web Service, root directory `server`, build `npm install`, start `npm start`, health check path `/healthz`.
-2. Environment variables from `server/.env.example`. Generate the device secret with `openssl rand -hex 32`.
+2. Environment variables from `server/.env.example` (including `TURNSTILE_SECRET`, see below). Generate the device secret with `openssl rand -hex 32`.
 3. Keep the service key only here.
 
 ### 3. Firmware
@@ -109,3 +109,13 @@ Icon and splash are in `app/assets/` (matcha clay disc with a sprout). Replace t
 - Package versions in `app/package.json` target Expo SDK 54. If your Expo version differs, `npx expo install --fix` corrects them.
 - Rotate `DEVICE_SECRET` by changing it on the server and in `config.h`, then reflashing.
 - No limit switch on the shade (as before): add one for homing if power can fail mid-move.
+
+
+## Sign-in captcha (Cloudflare Turnstile)
+
+Sign-in needs a solved Turnstile challenge. Only `POST /api/auth/login` checks it; token refresh and the ESP32's signed device requests are not affected.
+
+- **Server:** set `TURNSTILE_SECRET` (required in production; the server won't start without it). Optionally set `TURNSTILE_HOSTNAMES` to the domain(s) your web app runs on. The server verifies the token with Cloudflare, checks the `login` action, and fails closed if Cloudflare can't be reached. A failed captcha is logged as `captcha_failed` and does not count toward the password lockout.
+- **App:** the public site key is in `app/src/screens/Login.js` (override with `EXPO_PUBLIC_TURNSTILE_SITE_KEY`). Never put the secret key in the app.
+- **Cloudflare dashboard:** add your web hostname to the widget's allowed hostnames. For the native app also set `turnstileBaseUrl` in `app.json` (or `EXPO_PUBLIC_TURNSTILE_BASE_URL`) to a hostname that is on that list.
+- Local testing: use Cloudflare's dummy keys (site `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`).

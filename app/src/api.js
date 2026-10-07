@@ -64,8 +64,8 @@ export async function api(path, opts = {}) {
   }
 }
 
-export async function login(email, password) {
-  const s = await raw('/api/auth/login', { method: 'POST', body: { email: email.trim(), password } });
+export async function login(email, password, captcha) {
+  const s = await raw('/api/auth/login', { method: 'POST', body: { email: email.trim(), password, captcha } });
   await saveSession(s); return s.user;
 }
 export async function logout() {

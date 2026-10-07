@@ -50,7 +50,9 @@
       "expo-local-authentication"
     ],
     "extra": {
-      "apiUrl": "https://your-agrisense-server.onrender.com"
+      "apiUrl": "https://your-agrisense-server.onrender.com",
+      "turnstileSiteKey": "0x4AAAAAAFPyh2X1GS8e-smM",
+      "turnstileBaseUrl": "https://agrisense-1-0.onrender.com"
     }
   }
 }

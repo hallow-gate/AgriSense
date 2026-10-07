@@ -13,7 +13,10 @@ const Env = z.object({
   ADMIN_EMAILS: list,
   VIEWER_EMAILS: list,
   TIMEZONE: z.string().default('Asia/Manila'),
-}).refine(e => e.ADMIN_EMAILS.length > 0, { message: 'ADMIN_EMAILS needs at least one email', path: ['ADMIN_EMAILS'] });
+  TURNSTILE_SECRET: z.string().min(10).optional(),                // Cloudflare Turnstile secret key (server only)
+  TURNSTILE_HOSTNAMES: list,                                       // optional: only accept tokens issued on these hostnames
+}).refine(e => e.NODE_ENV !== 'production' || !!e.TURNSTILE_SECRET, { message: 'TURNSTILE_SECRET is required in production', path: ['TURNSTILE_SECRET'] })
+  .refine(e => e.ADMIN_EMAILS.length > 0, { message: 'ADMIN_EMAILS needs at least one email', path: ['ADMIN_EMAILS'] });
 
 const parsed = Env.safeParse(process.env);
 if (!parsed.success) {

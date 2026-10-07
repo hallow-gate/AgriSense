@@ -6,10 +6,16 @@ import { T, Gap } from '../components/Clay';
 import { Wordmark } from '../components/Logo';
 import Icon from '../components/Icon';
 import LoginVideo from '../components/LoginVideo';
-import { login } from '../api';
+import Constants from 'expo-constants';
+import Turnstile from '../components/Turnstile';
+import { login, BASE } from '../api';
 import { C, F } from '../theme';
 
 const web = Platform.OS === 'web';
+const extra = Constants.expoConfig?.extra || {};
+// A site key is public by design (it ships in every page that shows the widget). The secret key lives only on the server.
+const SITE_KEY = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY || extra.turnstileSiteKey || '0x4AAAAAAFPyh2X1GS8e-smM';
+const CAPTCHA_BASE = process.env.EXPO_PUBLIC_TURNSTILE_BASE_URL || extra.turnstileBaseUrl || BASE;
 
 function Field({ label, right, inputRef, ...props }) {
   const [focus, setFocus] = useState(false);
@@ -29,16 +35,21 @@ export default function Login({ onDone }) {
   const ins = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const split = width >= 900;
-  const pwRef = useRef(null);
+  const pwRef = useRef(null), cap = useRef(null);
+  const [token, setToken] = useState(null);
   const [email, setEmail] = useState(''), [pw, setPw] = useState(''), [show, setShow] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState('');
 
   const go = async () => {
     if (busy) return;
     if (!email || !pw) return setErr('Enter your email and password.');
+    if (!token) return setErr('Complete the security check first.');
     setBusy(true); setErr('');
-    try { onDone(await login(email, pw)); }
+    try { onDone(await login(email, pw, token)); }
     catch (e) {
-      setErr(e.status === 429 ? `Too many attempts. Try again in ${Math.ceil((e.data?.retry_in || 900) / 60)} min.`
+      cap.current?.reset();                              // a token only works once
+      setErr(e.data?.code === 'captcha' ? 'The security check failed. Please try it again.'
+        : e.data?.code === 'captcha_unavailable' ? 'The security check is unavailable right now. Try again in a moment.'
+        : e.status === 429 ? `Too many attempts. Try again in ${Math.ceil((e.data?.retry_in || 900) / 60)} min.`
         : e.status === 401 ? 'Email or password is wrong.' : e.message);
       setBusy(false);
     }
@@ -56,15 +67,17 @@ export default function Login({ onDone }) {
         textContentType="password" autoComplete="password" returnKeyType="go" onSubmitEditing={go}
         right={<Pressable onPress={() => setShow(s => !s)} hitSlop={8} accessibilityLabel={show ? 'Hide password' : 'Show password'} style={{ paddingHorizontal: 14, cursor: 'pointer' }}><Icon name={show ? 'eyeoff' : 'eye'} size={20} color={C.mute} /></Pressable>} />
 
+      {SITE_KEY ? <Turnstile ref={cap} siteKey={SITE_KEY} onToken={setToken} baseUrl={CAPTCHA_BASE} /> : null}
+
       {err ? (
         <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8, alignItems: 'center', backgroundColor: C.bad + '16', borderRadius: 12, padding: 10, marginBottom: 14 }}>
           <Icon name="alert" size={17} color={C.bad} /><T s={13.5} c={C.bad} style={{ flex: 1 }}>{err}</T>
         </View>
       ) : null}
 
-      <Pressable onPress={go} disabled={busy} style={({ pressed }) => ({ opacity: busy ? 0.7 : pressed ? 0.88 : 1, cursor: 'pointer' })}>
+      <Pressable onPress={go} disabled={busy || !token} style={({ pressed }) => ({ opacity: busy ? 0.7 : !token ? 0.55 : pressed ? 0.88 : 1, cursor: token ? 'pointer' : 'default' })}>
         <LinearGradient colors={C.matcha} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}>
-          <T s={16} f="bold" c="#fff">{busy ? 'Signing in…' : 'Sign in'}</T>
+          <T s={16} f="bold" c="#fff">{busy ? 'Signing in…' : !token ? 'Verifying you\'re human…' : 'Sign in'}</T>
         </LinearGradient>
       </Pressable>
     </View>

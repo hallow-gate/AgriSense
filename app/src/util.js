@@ -59,7 +59,7 @@ export function eventMeta(e) {
 }
 
 const ACT = {
-  login_ok: ['shield', 'ok', 'Signed in'], login_failed: ['lock', 'bad', 'Failed sign-in'], login_locked: ['lock', 'bad', 'Locked out'],
+  login_ok: ['shield', 'ok', 'Signed in'], login_failed: ['lock', 'bad', 'Failed sign-in'], login_locked: ['lock', 'bad', 'Locked out'], captcha_failed: ['shield', 'bad', 'Security check failed'],
   logout: ['logout', 'mute', 'Signed out'], device_auth_failed: ['chip', 'bad', 'Device request rejected'],
 };
 export function auditMeta(l) {
