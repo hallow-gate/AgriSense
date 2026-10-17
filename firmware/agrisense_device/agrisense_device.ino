@@ -21,7 +21,7 @@ RTC_DS3231 rtc; bool rtcPresent = false;
 Preferences pf;
 
 // settings pushed from the app (clamped here, so a bad server can't exceed safe limits)
-struct Cfg { bool autoWater = true, autoShade = true; int soilDry = DEF_SOIL_DRY_PCT; float hotC = DEF_HOT_C, coolC = DEF_COOL_C; int pumpSec = DEF_PUMP_SECONDS, h1 = DEF_HOUR_1, h2 = DEF_HOUR_2; } cfg;
+struct Cfg { bool autoWater = true, autoShade = true; int soilDry = DEF_SOIL_DRY_PCT; float hotC = DEF_HOT_C, coolC = DEF_COOL_C; int pumpSec = DEF_PUMP_SECONDS, shadeCloseSec = DEF_SHADE_CLOSE_SECONDS, shadeOpenSec = DEF_SHADE_OPEN_SECONDS, h1 = DEF_HOUR_1, h2 = DEF_HOUR_2; } cfg;
 
 float tC = NAN, hum = NAN; int soilPct = -1; bool soilFault = false;
 bool shadeClosed = false, shadeMoving = false, hold = false;
@@ -49,7 +49,9 @@ bool constEq(const String& a, const String& b) {
 void loadCfg() {
   cfg.autoWater = pf.getBool("aw", true); cfg.autoShade = pf.getBool("as", true);
   cfg.soilDry = pf.getInt("sd", DEF_SOIL_DRY_PCT); cfg.hotC = pf.getFloat("hot", DEF_HOT_C); cfg.coolC = pf.getFloat("cool", DEF_COOL_C);
-  cfg.pumpSec = pf.getInt("ps", DEF_PUMP_SECONDS); cfg.h1 = pf.getInt("h1", DEF_HOUR_1); cfg.h2 = pf.getInt("h2", DEF_HOUR_2);
+  cfg.pumpSec = constrain(pf.getInt("ps", DEF_PUMP_SECONDS), 5, (int)(PUMP_HARD_MAX_MS / 1000));
+  cfg.shadeCloseSec = constrain(pf.getInt("ssc", DEF_SHADE_CLOSE_SECONDS), 10, (int)(SHADE_HARD_MAX_MS / 1000));
+  cfg.shadeOpenSec = constrain(pf.getInt("sso", DEF_SHADE_OPEN_SECONDS), 10, (int)(SHADE_HARD_MAX_MS / 1000)); cfg.h1 = pf.getInt("h1", DEF_HOUR_1); cfg.h2 = pf.getInt("h2", DEF_HOUR_2);
 }
 void applyCfg(JsonObjectConst c) {
   if (c.isNull()) return;
@@ -60,12 +62,14 @@ void applyCfg(JsonObjectConst c) {
   n.coolC = constrain((float)(c["cool_c"] | cfg.coolC), 25.0f, n.hotC - 1.0f);
   n.pumpSec = constrain((int)(c["pump_seconds"] | cfg.pumpSec), 5, (int)(PUMP_HARD_MAX_MS / 1000));
   n.h1 = constrain((int)(c["water_hour_1"] | cfg.h1), 0, 23); n.h2 = constrain((int)(c["water_hour_2"] | cfg.h2), 0, 23);
+  n.shadeCloseSec = constrain((int)(c["shade_close_seconds"] | cfg.shadeCloseSec), 10, (int)(SHADE_HARD_MAX_MS / 1000));
+  n.shadeOpenSec = constrain((int)(c["shade_open_seconds"] | cfg.shadeOpenSec), 10, (int)(SHADE_HARD_MAX_MS / 1000));
   if (n.h1 == n.h2) return;                                   // nonsense -> ignore the whole update
   if (n.autoWater == cfg.autoWater && n.autoShade == cfg.autoShade && n.soilDry == cfg.soilDry && n.hotC == cfg.hotC &&
-      n.coolC == cfg.coolC && n.pumpSec == cfg.pumpSec && n.h1 == cfg.h1 && n.h2 == cfg.h2) return;
+      n.coolC == cfg.coolC && n.pumpSec == cfg.pumpSec && n.shadeCloseSec == cfg.shadeCloseSec && n.shadeOpenSec == cfg.shadeOpenSec && n.h1 == cfg.h1 && n.h2 == cfg.h2) return;
   cfg = n;
   pf.putBool("aw", n.autoWater); pf.putBool("as", n.autoShade); pf.putInt("sd", n.soilDry); pf.putFloat("hot", n.hotC);
-  pf.putFloat("cool", n.coolC); pf.putInt("ps", n.pumpSec); pf.putInt("h1", n.h1); pf.putInt("h2", n.h2);
+  pf.putFloat("cool", n.coolC); pf.putInt("ps", n.pumpSec); pf.putInt("ssc", n.shadeCloseSec); pf.putInt("sso", n.shadeOpenSec); pf.putInt("h1", n.h1); pf.putInt("h2", n.h2);
 }
 
 // ---------- persistent outbox: events survive reboot/offline, deduped server-side by event_id ----------
@@ -106,7 +110,13 @@ void pumpStop() {
 }
 
 // ---------- shade (stepper, slow, non-blocking) ----------
+// closing and opening each take their own time (calibrate in the app, max 3 min)
+void applyShadeSpeed(bool close) {
+  float v = constrain((float)SHADE_STEPS / (close ? cfg.shadeCloseSec : cfg.shadeOpenSec), 5.0f, (float)SHADE_MAX_SPEED);
+  st.setMaxSpeed(v); st.setAcceleration(v * 4);
+}
 void moveShade(bool close, const String& src, const String& id, const String& cmd) {
+  applyShadeSpeed(close);
   shadeMoving = true; shSrc = src; shId = id; shCmd = cmd; shadeClosed = close;
   st.moveTo(close ? SHADE_STEPS : 0);
 }
@@ -229,7 +239,7 @@ void setup() {
   pf.begin("plant", false); boots = pf.getUInt("boots", 0) + 1; pf.putUInt("boots", boots); loadCfg();
   analogSetPinAttenuation(PIN_SOIL, ADC_11db); dht.begin();
   shadeClosed = pf.getBool("closed", false);
-  st.setMaxSpeed(SHADE_SPEED); st.setAcceleration(100); st.setCurrentPosition(shadeClosed ? SHADE_STEPS : 0); st.disableOutputs();
+  applyShadeSpeed(true); st.setCurrentPosition(shadeClosed ? SHADE_STEPS : 0); st.disableOutputs();
   Wire.begin(21, 22); rtcPresent = rtc.begin();
   WiFi.mode(WIFI_STA); WiFi.setAutoReconnect(true); WiFi.begin(WIFI_SSID, WIFI_PASS);
   configTzTime(TZ_INFO, "pool.ntp.org", "time.google.com");

@@ -9,7 +9,7 @@
 // The secret is never sent over the network: every request is signed with it (HMAC-SHA256).
 #define DEVICE_ID     "agrisense-01"
 #define DEVICE_SECRET "paste-the-64-char-hex-secret-here"
-#define FW_VERSION    "2.0.0"
+#define FW_VERSION    "2.1.0"
 
 // ---------- TLS ----------
 // Pin the root CA of your server so a fake server on the same Wi-Fi can't impersonate it.
@@ -38,18 +38,21 @@ PASTE YOUR SERVER'S ROOT CERTIFICATE HERE
 #define SOIL_DRY_RAW 3000              // sensor in air
 #define SOIL_WET_RAW 1300              // sensor in water
 #define SHADE_STEPS 8192L              // 28BYJ-48 half-steps -> tune
-#define SHADE_SPEED 150                // steps/s = slow
+#define SHADE_MAX_SPEED 800            // steps/s ceiling so the stepper never stalls (28BYJ-48)
 
 // ---------- defaults (the app can change these; they are used until the first sync) ----------
 #define DEF_SOIL_DRY_PCT 40
 #define DEF_HOT_C 37.0f
 #define DEF_COOL_C 35.0f
 #define DEF_PUMP_SECONDS 30
+#define DEF_SHADE_CLOSE_SECONDS 55     // time for the cover to fully close
+#define DEF_SHADE_OPEN_SECONDS 55      // time for the cover to fully open
 #define DEF_HOUR_1 7
 #define DEF_HOUR_2 17
 
 // ---------- fixed safety limits (the server can never push past these) ----------
-#define PUMP_HARD_MAX_MS 30000UL       // pump never runs longer than 30 s
+#define PUMP_HARD_MAX_MS 180000UL      // pump never runs longer than 3 min
+#define SHADE_HARD_MAX_MS 180000UL     // cover travel time is capped at 3 min
 #define WATER_GAP_MS 300000UL          // min 5 min between manual waterings
 #define WINDOW_MIN 15                  // catch-up window after a scheduled hour
 #define CONFIRM_READS 6                // consecutive readings before moving the cover

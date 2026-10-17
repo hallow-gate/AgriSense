@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { wrap } from '../util.js';
-import { getSettings } from '../settings.js';
+import { getSettings, publicSettings } from '../settings.js';
 import { isOnline, vpd, nextWatering, buildAlerts } from '../insights.js';
 import { expireCommands } from '../commands.js';
 
@@ -25,7 +25,7 @@ r.get('/status', wrap(async (req, res) => {
     vpd: vpd(tel?.temp_c, tel?.humidity),
     next_watering: nextWatering(settings),
     events: e.data || [], open: c.data || [],
-    settings,
+    settings: publicSettings(settings, isAdmin),
     alerts: buildAlerts({ tel, settings, online, failedSignins: f.count || 0, isAdmin }),
   });
 }));

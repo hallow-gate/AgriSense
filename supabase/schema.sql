@@ -50,12 +50,20 @@ create table if not exists settings(
   soil_dry_pct int not null default 40 check(soil_dry_pct between 10 and 80),
   hot_c real not null default 37 check(hot_c between 30 and 45),
   cool_c real not null default 35 check(cool_c between 25 and 43),
-  pump_seconds int not null default 30 check(pump_seconds between 5 and 30),
+  pump_seconds int not null default 30 check(pump_seconds between 5 and 180),
   water_hour_1 int not null default 7 check(water_hour_1 between 0 and 23),
   water_hour_2 int not null default 17 check(water_hour_2 between 0 and 23),
   pump_ml_per_s real not null default 20 check(pump_ml_per_s between 1 and 200),
   updated_at timestamptz default now(), updated_by uuid,
   check(cool_c <= hot_c - 1));
+-- v2.1: adjustable run times (max 3 min) and SMS notifications
+alter table settings add column if not exists shade_close_seconds int not null default 55 check(shade_close_seconds between 10 and 180);
+alter table settings add column if not exists shade_open_seconds int not null default 55 check(shade_open_seconds between 10 and 180);
+alter table settings drop column if exists shade_seconds;
+alter table settings drop constraint if exists settings_pump_seconds_check;
+alter table settings add constraint settings_pump_seconds_check check(pump_seconds between 5 and 180);
+alter table settings add column if not exists sms_enabled boolean not null default false;
+alter table settings add column if not exists sms_recipients text[] not null default '{}' check(cardinality(sms_recipients) <= 3);
 insert into settings(id) values(1) on conflict do nothing;
 
 -- ---------- user / security audit log ----------

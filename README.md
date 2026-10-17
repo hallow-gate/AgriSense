@@ -21,6 +21,12 @@ Plant watering and shade system. Three separate parts that only talk over HTTPS:
 - The app never sees a Supabase key. It signs in through the server, which also logs every attempt.
 - New: sensor history and charts, daily statistics, activity log, user log, editable automation settings (pushed to the ESP32), alerts, VPD (air dryness) reading, water-use estimate, device health, biometric app lock, admin / viewer roles.
 
+## v2.1: calibration and SMS
+
+- **Run times (max 3 min).** Control tab: *Pump runs for* (5 s to 3 min) and *Cover (close) time* and *Uncover (open) time* (each 10 s to 3 min, set separately; the firmware sets the stepper speed for each direction from them). The firmware re-clamps both to 3 min. Run `supabase/schema.sql` again to add the new columns.
+- **SMS via textbee.dev** (`@textbee/sdk`). Control tab → *SMS notifications* → add 1 to 3 numbers → Save changes. Server env vars: `TEXTBEE_API_KEY` (required for SMS), `TEXTBEE_DEVICE_ID` (optional, otherwise your default device sends). When SMS is off, or the key is missing, nothing is sent. Only events from the last 5 minutes are texted, and each event once (the database's unique `event_id` drops replays, so an offline backlog that flushes later is not texted). Viewer accounts never see the numbers, and numbers are kept out of the audit log.
+- Reflash the firmware (2.1.0) so it picks up `shade_seconds` and the 3 min pump limit.
+
 ## Security model
 
 **Server**
@@ -38,7 +44,7 @@ Plant watering and shade system. Three separate parts that only talk over HTTPS:
 - Server rejects: wrong id, clock off by more than 5 min, bad signature, tampered body, replayed nonce.
 - The server signs every reply with the same timestamp and nonce. The ESP32 ignores any command or setting that isn't validly signed, so a fake server or a replayed reply can't make it water.
 - The ESP32 pins your server's root certificate (no `setInsecure`).
-- Firmware keeps its own hard limits no matter what the server says: pump max 30 s, 5 min between manual waterings, no watering on sensor fault, setting values clamped.
+- Firmware keeps its own hard limits no matter what the server says: pump max 3 min, 5 min between manual waterings, no watering on sensor fault, setting values clamped.
 
 **App**
 - Tokens live in the phone's secure storage (Keychain / Keystore), refreshed automatically. Cloud backup is disabled. Optional fingerprint / face lock, re-asked after 30 s in the background.

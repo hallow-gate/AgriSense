@@ -4,6 +4,7 @@ import { db } from '../db.js';
 import { wrap } from '../util.js';
 import { getSettings, deviceConfig } from '../settings.js';
 import { expireCommands } from '../commands.js';
+import { notifyEvents } from '../sms.js';
 
 const r = Router();
 const TYPES = ['water_auto', 'water_manual', 'water_skipped', 'shade_close', 'shade_open'];
@@ -50,8 +51,10 @@ r.post('/sync', wrap(async (req, res) => {
     occurred_at: e.ts && e.ts > 1.7e9 && e.ts * 1000 <= now + 300_000 ? new Date(e.ts * 1000).toISOString() : new Date(now).toISOString(),
   }));
   if (rows.length) {
-    const { error } = await db.from('events').upsert(rows, { onConflict: 'event_id', ignoreDuplicates: true });
+    // .select() returns only rows actually inserted, so replayed events are not texted twice
+    const { data: inserted, error } = await db.from('events').upsert(rows, { onConflict: 'event_id', ignoreDuplicates: true }).select('event_id,type,source,detail,occurred_at');
     if (error) return res.status(500).json({ error: 'db' });         // device keeps its outbox and retries
+    notifyEvents(inserted || []);                                    // fire and forget
     for (const e of rows) if (e.command_id)
       await db.from('commands').update({ status: e.detail?.result === 'ok' ? 'done' : 'failed', done_at: new Date().toISOString() })
         .eq('id', e.command_id).in('status', ['pending', 'sent']);
