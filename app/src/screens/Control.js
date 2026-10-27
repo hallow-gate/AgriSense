@@ -93,8 +93,8 @@ export default function Control({ active, user }) {
           <Stepper label="Water again at" value={D.water_hour_2} min={0} max={23} format={hourLabel} onChange={v => up('water_hour_2', skip(v, D.water_hour_2, D.water_hour_1))} disabled={!admin} />
           <Stepper label="Soil counts as dry below" value={D.soil_dry_pct} unit="%" min={10} max={80} step={5} onChange={v => up('soil_dry_pct', v)} disabled={!admin} />
           <Stepper label="Pump runs for" hint="Calibrate how long each watering lasts. Max 3 min" value={D.pump_seconds} format={dur} min={5} max={180} step={5} onChange={v => up('pump_seconds', v)} disabled={!admin} />
-          <Stepper label="Cover (close) time" hint="Seconds to fully close the shade. Max 3 min" value={D.shade_close_seconds} format={dur} min={10} max={180} step={5} onChange={v => up('shade_close_seconds', v)} disabled={!admin} />
-          <Stepper label="Uncover (open) time" hint="Seconds to fully open the shade. Max 3 min" value={D.shade_open_seconds} format={dur} min={10} max={180} step={5} onChange={v => up('shade_open_seconds', v)} disabled={!admin} />
+          <Stepper label="Cover (close) time" hint="Seconds to fully close the shade. Max 10 min" value={D.shade_close_seconds} format={dur} min={10} max={600} step={5} onChange={v => up('shade_close_seconds', v)} disabled={!admin} />
+          <Stepper label="Uncover (open) time" hint="Seconds to fully open the shade. Max 10 min" value={D.shade_open_seconds} format={dur} min={10} max={600} step={5} onChange={v => up('shade_open_seconds', v)} disabled={!admin} />
           <Divider />
           <Stepper label="Close cover at" value={D.hot_c} unit="°C" min={30} max={45} onChange={v => up('hot_c', v)} disabled={!admin} />
           <Stepper label="Reopen at" value={D.cool_c} unit="°C" min={25} max={D.hot_c - 1} onChange={v => up('cool_c', v)} disabled={!admin} />
