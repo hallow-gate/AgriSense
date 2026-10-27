@@ -16,9 +16,9 @@ const Base = z.object({
   soil_dry_pct: z.number().int().min(10).max(80),
   hot_c: z.number().min(30).max(45),
   cool_c: z.number().min(25).max(43),
-  pump_seconds: z.number().int().min(5).max(180),     // 3 min max
-  shade_close_seconds: z.number().int().min(10).max(180),  // time to fully close the cover, 3 min max
-  shade_open_seconds: z.number().int().min(10).max(180),   // time to fully open (uncover), 3 min max
+  pump_seconds: z.number().int().min(5).max(180),     // 10 min max
+  shade_close_seconds: z.number().int().min(10).max(600),  // time to fully close the cover, 10 min max
+  shade_open_seconds: z.number().int().min(10).max(600),   // time to fully open (uncover), 10 min max
   water_hour_1: z.number().int().min(0).max(23),
   water_hour_2: z.number().int().min(0).max(23),
   pump_ml_per_s: z.number().min(1).max(200),
