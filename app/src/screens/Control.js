@@ -11,7 +11,7 @@ import { C, F } from '../theme';
 const skip = (v, cur, other) => (v === other ? Math.min(23, Math.max(0, v + (v > cur ? 1 : -1))) : v);
 const KEYS = ['auto_water', 'auto_shade', 'soil_dry_pct', 'hot_c', 'cool_c', 'pump_seconds', 'shade_close_seconds', 'shade_open_seconds', 'water_hour_1', 'water_hour_2', 'pump_ml_per_s', 'sms_enabled', 'sms_recipients'];
 
-// run times up to 3 min show as m:ss once they pass a minute
+// run times up to 10 min show as m:ss once they pass a minute
 const dur = v => (v < 60 ? `${v} s` : `${Math.floor(v / 60)}m ${String(v % 60).padStart(2, '0')}s`);
 const nums = a => (a || []).map(x => x.trim()).filter(Boolean);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
